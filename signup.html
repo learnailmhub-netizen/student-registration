@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Registration</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 550px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 10px;
+    }
+    h2 { text-align: center; color: #333; }
+    label { font-weight: bold; display: block; margin-top: 8px; font-size: 14px; }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 4px 0;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    input:focus, select:focus { outline: none; border-color: #4CAF50; }
+    .error { border-color: red !important; background-color: #ffe6e6; }
+    .error-text { color: red; font-size: 13px; display: block; margin-bottom: 6px; }
+    .success-text {
+      background: #e8f5e9;
+      border: 2px solid #4CAF50;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      color: green;
+      font-weight: bold;
+      display: none;
+    }
+    .success-text small { font-weight: normal; color: #555; display: block; margin-top: 8px; }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover { background: #45a049; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .example { color: #888; font-size: 12px; margin: 2px 0 6px 0; display: block; }
+    .file-wrapper { position: relative; width: 100%; }
+    .file-wrapper input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .file-label {
+      display: block;
+      padding: 10px;
+      background: #e0e0e0;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .file-label:hover { background: #d0d0d0; }
+    #previewImg {
+      margin-top: 10px;
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+      display: none;
+    }
+    .pic-hint { color: #888; font-size: 12px; margin-top: 6px; display: block; }
+    .fee-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .fee-box strong { font-size: 20px; color: #d39e00; }
+  </style>
+</head>
+<body>
+
+<h2>📝 Student Registration</h2>
+
+<div id="successMessage" class="success-text"></div>
+<div id="errorMessage" class="error-text" style="font-size:16px;margin-bottom:10px;display:none;color:red;background:#ffe6e6;padding:10px;border-radius:6px;"></div>
+
+<label>Full Name *</label>
+<input id="name" placeholder="Enter your full name">
+<span class="example">Example: Muhammad Ali</span>
+<span class="error-text" id="nameError"></span>
+
+<label>Father / Guardian Name *</label>
+<input id="fatherName" placeholder="Enter father or guardian name">
+<span class="example">Example: Ahmed Khan</span>
+<span class="error-text" id="fatherError"></span>
+
+<label>CNIC / B-Form Number *</label>
+<input id="cnic" placeholder="Enter 13-digit CNIC or B-Form number">
+<span class="example">Example: 12345-6789012-3</span>
+<span class="error-text" id="cnicError"></span>
+
+<label>Date of Birth *</label>
+<input id="dob" type="date">
+<span class="error-text" id="dobError"></span>
+
+<label>Email Address *</label>
+<input id="email" placeholder="Enter your email">
+<span class="example">Example: jan@gmail.com</span>
+<span class="error-text" id="emailError"></span>
+
+<label>Phone Number *</label>
+<select id="countryCode">
+  <option value="+92">🇵🇰 Pakistan (+92)</option>
+  <option value="+91">🇮🇳 India (+91)</option>
+  <option value="+1">🇺🇸 USA (+1)</option>
+  <option value="+44">🇬🇧 UK (+44)</option>
+</select>
+<input id="phone" placeholder="Enter phone number (e.g. 3001234567)">
+<span class="example">Example: 3001234567 (without country code)</span>
+<span class="error-text" id="phoneError"></span>
+
+<label>Class *</label>
+<input id="class" placeholder="Enter class (1-14)">
+<span class="example">Example: 5</span>
+<span class="error-text" id="classError"></span>
+
+<label>Profile Picture *</label>
+<div class="file-wrapper">
+  <span class="file-label" id="fileLabel">📸 Upload Photo</span>
+  <input type="file" id="profilePic" accept="image/jpeg,image/png" onchange="previewImage(event)">
+</div>
+<span class="pic-hint">📌 Upload JPG or PNG (max 2MB)</span>
+<span class="error-text" id="picError"></span>
+<img id="previewImg" alt="Preview">
+
+<div class="fee-box">
+  💰 <strong>Registration Fee: Rs. 2,500</strong>
+</div>
+
+<button onclick="register()" id="registerBtn">📤 Register</button>
+
+<script>
+// ============================================
+// 🔧 API CONFIGURATION
+// ============================================
+const API_BASE = 'https://jaqueline-unguileful-aspersively.ngrok-free.dev/api';
+
+// ============================================
+// 📷 PREVIEW IMAGE
+// ============================================
+function previewImage(event) {
+  const file = event.target.files[0];
+  const preview = document.getElementById('previewImg');
+  const errorSpan = document.getElementById('picError');
+  const label = document.getElementById('fileLabel');
+
+  errorSpan.innerText = '';
+  preview.style.display = 'none';
+
+  if (!file) { label.innerText = '📸 Upload Photo'; return; }
+
+  const allowedTypes = ['image/jpeg', 'image/png'];
+  const maxSize = 2 * 1024 * 1024;
+
+  if (!allowedTypes.includes(file.type)) {
+    errorSpan.innerText = '❌ Only JPG and PNG files are allowed.';
+    label.innerText = '📸 Upload Photo (Invalid)';
+    return;
+  }
+
+  if (file.size > maxSize) {
+    errorSpan.innerText = '❌ File size must be less than 2MB.';
+    label.innerText = '📸 Upload Photo (Too Large)';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    label.innerText = '✅ ' + file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================
+// 📤 REGISTER STUDENT (NO PASSWORD)
+// ============================================
+async function register() {
+  // ✅ PREVENT MULTIPLE CLICKS
+  const btn = document.getElementById('registerBtn');
+  if (btn.disabled) return;
+
+  clearErrors();
+  hideSuccess();
+  hideError();
+
+  const name = document.getElementById('name').value.trim();
+  const fatherName = document.getElementById('fatherName').value.trim();
+  const cnic = document.getElementById('cnic').value.trim();
+  const dob = document.getElementById('dob').value;
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const classVal = document.getElementById('class').value.trim();
+  const profilePic = document.getElementById('profilePic').files[0];
+
+  let isValid = true;
+
+  // --- Validations ---
+  if (name === '' || name.length < 3) {
+    showError('name', 'Please enter your full name (at least 3 characters).');
+    isValid = false;
+  }
+
+  if (fatherName === '' || fatherName.length < 3) {
+    showError('fatherName', 'Please enter father/guardian name.');
+    isValid = false;
+  }
+
+  const cnicPattern = /^[0-9]{5}-[0-9]{7}-[0-9]{1}$/;
+  const bFormPattern = /^[0-9]{4}-[0-9]{7}-[0-9]{1}$/;
+  if (cnic === '') {
+    showError('cnic', 'Please enter CNIC or B-Form number.');
+    isValid = false;
+  } else if (!cnicPattern.test(cnic) && !bFormPattern.test(cnic)) {
+    showError('cnic', 'Invalid format. Use CNIC: 12345-6789012-3 or B-Form: 1234-5678901-2');
+    isValid = false;
+  }
+
+  if (dob === '') {
+    showError('dob', 'Please select your date of birth.');
+    isValid = false;
+  }
+
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z]+\.[cC][oO][mM]$/;
+  if (email === '') {
+    showError('email', 'Please enter your email address.');
+    isValid = false;
+  } else if (email.includes('STD-') || !emailPattern.test(email)) {
+    showError('email', 'Invalid email format. Only username@gmail.com is allowed.');
+    isValid = false;
+  }
+
+  const phonePattern = /^[0-9]{10}$/;
+  if (phone === '') {
+    showError('phone', 'Please enter your phone number.');
+    isValid = false;
+  } else if (!phonePattern.test(phone)) {
+    showError('phone', 'Phone must be exactly 10 digits. Example: 3001234567');
+    isValid = false;
+  }
+
+  if (classVal === '') {
+    showError('class', 'Please enter your class.');
+    isValid = false;
+  } else {
+    const classNum = Number(classVal);
+    if (isNaN(classNum) || classNum < 1 || classNum > 14) {
+      showError('class', 'Class must be between 1 and 14.');
+      isValid = false;
+    }
+  }
+
+  if (!profilePic) {
+    showError('pic', 'Please upload a profile picture.');
+    isValid = false;
+  } else {
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    const maxSize = 2 * 1024 * 1024;
+    if (!allowedTypes.includes(profilePic.type)) {
+      showError('pic', 'Only JPG and PNG files are allowed.');
+      isValid = false;
+    } else if (profilePic.size > maxSize) {
+      showError('pic', 'File size must be less than 2MB.');
+      isValid = false;
+    }
+  }
+
+  if (!isValid) {
+    const firstError = document.querySelector('.error');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // --- Send to Backend ---
+  btn.textContent = '⏳ Registering...';
+  btn.disabled = true;
+
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('fatherName', fatherName);
+  formData.append('cnic', cnic);
+  formData.append('dob', dob);
+  formData.append('email', email);
+  formData.append('phone', phone);
+  formData.append('class', classVal);
+  formData.append('profilePic', profilePic);
+  formData.append('status', 'PENDING');
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/signup`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      showSuccess(email);
+      resetForm();
+    } else {
+      showError('', data.message || 'Registration failed. Please try again.');
+    }
+
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    showError('', 'Server error: ' + error.message);
+  } finally {
+    btn.textContent = '📤 Register';
+    btn.disabled = false;
+  }
+}
+
+// ============================================
+// 🛠️ HELPER FUNCTIONS
+// ============================================
+function showSuccess(email) {
+  const msg = document.getElementById('successMessage');
+  msg.style.display = 'block';
+  msg.innerHTML = `
+    ✅ Registration submitted successfully!<br>
+    <small>
+      📧 A confirmation email has been sent to <strong>${email}</strong><br><br>
+      📌 Please pay the registration fee: <strong>Rs. 2,500</strong><br>
+      📱 Send payment screenshot to: <strong>0333-3156848</strong><br>
+      ⏳ Your account will be activated after admin approval.
+    </small>
+  `;
+  msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideSuccess() {
+  document.getElementById('successMessage').style.display = 'none';
+}
+
+function showError(fieldId, message) {
+  const errorMsg = document.getElementById('errorMessage');
+  errorMsg.style.display = 'block';
+  errorMsg.textContent = '❌ ' + message;
+
+  if (fieldId) {
+    const input = document.getElementById(fieldId);
+    if (input) input.classList.add('error');
+    const errorSpan = document.getElementById(fieldId + 'Error');
+    if (errorSpan) errorSpan.innerText = message;
+  }
+}
+
+function hideError() {
+  document.getElementById('errorMessage').style.display = 'none';
+}
+
+function clearErrors() {
+  document.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+  document.querySelectorAll('.error-text').forEach(el => el.innerText = '');
+  hideError();
+}
+
+function resetForm() {
+  document.getElementById('name').value = '';
+  document.getElementById('fatherName').value = '';
+  document.getElementById('cnic').value = '';
+  document.getElementById('dob').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('class').value = '';
+  document.getElementById('profilePic').value = '';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('fileLabel').innerText = '📸 Upload Photo';
+}
+</script>
+
+</body>
+</html>

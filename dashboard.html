@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      min-height: 100vh;
+    }
+    .header {
+      background: #4CAF50;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .header h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+    .profile-area {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .profile-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid white;
+      object-fit: cover;
+    }
+    .logout-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .logout-btn:hover {
+      background: #da190b;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .welcome {
+      font-size: 24px;
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .info-card {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+    .info-card label {
+      font-size: 12px;
+      color: #888;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-card span {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      display: block;
+      margin-top: 4px;
+    }
+    .error-box {
+      text-align: center;
+      padding: 50px 20px;
+    }
+    .error-box h2 { color: #f44336; }
+    .error-box a { color: #4CAF50; text-decoration: none; font-weight: bold; }
+    .error-box a:hover { text-decoration: underline; }
+    .fee-box {
+      margin-top: 25px;
+      padding: 15px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .fee-box strong { color: #d39e00; }
+    .access-denied {
+      text-align: center;
+      padding: 80px 20px;
+      background: #f8d7da;
+      border: 2px solid #f44336;
+      border-radius: 10px;
+      margin: 50px auto;
+      max-width: 500px;
+    }
+    .access-denied h2 { color: #f44336; }
+    .access-denied p { color: #333; }
+    .access-denied a {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 25px;
+      background: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .access-denied a:hover {
+      background: #45a049;
+    }
+    @media (max-width: 600px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+      .header {
+        flex-direction: column;
+        text-align: center;
+      }
+      .profile-area {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== ACCESS DENIED (Shows if not logged in) ===== -->
+<div id="accessDenied" style="display:block;">
+  <div class="access-denied">
+    <h2>🚫 Access Denied</h2>
+    <p>You must be logged in to view this page.</p>
+    <a href="login.html">Go to Login</a>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD (Hidden until logged in) ===== -->
+<div id="dashboardMain" style="display:none;">
+  <div class="header">
+    <h1>📚 Student LMS Dashboard</h1>
+    <div class="profile-area">
+      <img id="profileImg" class="profile-img" src="https://via.placeholder.com/50" alt="Profile">
+      <span id="studentName" style="font-weight:bold;color:white;"></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container" id="dashboardContent">
+    <!-- Content will be loaded by JavaScript -->
+  </div>
+</div>
+
+<script>
+// ============================================
+// 🎓 STUDENT DASHBOARD - BLOCKS DIRECT ACCESS
+// ============================================
+
+const API_BASE = 'http://localhost:5000/api/auth';
+
+// ============================================
+// 🔐 CHECK AUTHENTICATION - RUNS IMMEDIATELY
+// ============================================
+(function checkAuthAndRedirect() {
+  console.log('🔍 Checking authentication...');
+  
+  const userData = localStorage.getItem('user');
+  console.log('🔍 User data from localStorage:', userData);
+
+  if (!userData) {
+    console.log('❌ No user data found. Access denied.');
+    document.getElementById('accessDenied').style.display = 'block';
+    document.getElementById('dashboardMain').style.display = 'none';
+    return;
+  }
+
+  try {
+    const user = JSON.parse(userData);
+    console.log('✅ User data found:', user);
+
+    if (!user._id && !user.id) {
+      console.log('❌ Invalid user data. Access denied.');
+      document.getElementById('accessDenied').style.display = 'block';
+      document.getElementById('dashboardMain').style.display = 'none';
+      return;
+    }
+
+    console.log('✅ User is logged in:', user.name);
+    document.getElementById('accessDenied').style.display = 'none';
+    document.getElementById('dashboardMain').style.display = 'block';
+    
+    // Load dashboard data
+    loadDashboard(user);
+  } catch (error) {
+    console.error('❌ Error parsing user data:', error);
+    document.getElementById('accessDenied').style.display = 'block';
+    document.getElementById('dashboardMain').style.display = 'none';
+  }
+})();
+
+// ============================================
+// 🟢 LOAD DASHBOARD
+// ============================================
+async function loadDashboard(user) {
+  const container = document.getElementById('dashboardContent');
+
+  try {
+    container.innerHTML = '<p style="text-align:center;">⏳ Loading your data...</p>';
+
+    const userId = user._id || user.id;
+    console.log('📡 Fetching user data for ID:', userId);
+
+    const response = await fetch(`${API_BASE}/me/${userId}`);
+
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 401) {
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+        return;
+      }
+      throw new Error('Failed to fetch user data');
+    }
+
+    const data = await response.json();
+    console.log('✅ User data received:', data);
+
+    const userData = data.user || data.data || data;
+
+    if (!userData || (!userData._id && !userData.id)) {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Save fresh data
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    // Update Profile Image
+    const profileImg = document.getElementById('profileImg');
+    if (userData.profilePic && userData.profilePic !== '') {
+      if (userData.profilePic.startsWith('http')) {
+        profileImg.src = userData.profilePic;
+      } else {
+        profileImg.src = `http://localhost:5000/uploads/${userData.profilePic}`;
+      }
+    } else {
+      const name = userData.name || 'Student';
+      profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4CAF50&color=fff&size=50`;
+    }
+
+    document.getElementById('studentName').textContent = userData.name || 'Student';
+
+    // Build Dashboard Content
+    container.innerHTML = `
+      <div class="welcome">
+        👋 Welcome, <strong>${userData.name || 'Student'}</strong>!
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <label>🆔 Student ID</label>
+          <span>${userData.studentId || 'Not assigned yet'}</span>
+        </div>
+        <div class="info-card">
+          <label>📘 Class</label>
+          <span>${userData.class || 'N/A'}</span>
+        </div>
+        <div class="info-card">
+          <label>👤 Father Name</label>
+          <span>${userData.fatherName || 'N/A'}</span>
+        </div>
+        <div class="info-card">
+          <label>📧 Email</label>
+          <span>${userData.email || 'N/A'}</span>
+        </div>
+        <div class="info-card">
+          <label>📞 Phone</label>
+          <span>${userData.phone || 'N/A'}</span>
+        </div>
+        <div class="info-card">
+          <label>📅 Registered Date</label>
+          <span>${userData.registeredDate ? new Date(userData.registeredDate).toLocaleDateString() : 'N/A'}</span>
+        </div>
+      </div>
+
+      <div class="fee-box">
+        <strong>💰 Fee Status:</strong>
+        ${userData.status === 'PAID' || userData.status === 'APPROVED'
+          ? '<span style="color:green;">✅ Paid</span>'
+          : '<span style="color:#d39e00;">⏳ Pending (Rs. 2,500)</span>'
+        }
+      </div>
+
+      ${userData.profilePic ? `
+        <div style="margin-top:20px;text-align:center;">
+          <p><strong>Your Profile Picture:</strong></p>
+          <img src="http://localhost:5000/uploads/${userData.profilePic}"
+               style="max-width:150px;border-radius:10px;border:2px solid #4CAF50;"
+               alt="Profile Picture">
+        </div>
+      ` : ''}
+    `;
+
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    container.innerHTML = `
+      <div class="error-box">
+        <h2>❌ Something went wrong</h2>
+        <p>${error.message}</p>
+        <button onclick="location.reload()" style="margin-top:15px;padding:10px 25px;background:#4CAF50;color:white;border:none;border-radius:5px;cursor:pointer;">
+          🔄 Refresh
+        </button>
+        <p style="margin-top:10px;"><a href="login.html">Go back to Login</a></p>
+      </div>
+    `;
+  }
+}
+
+// ============================================
+// 🔐 LOGOUT
+// ============================================
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = 'login.html';
+}
+</script>
+
+</body>
+</html>
